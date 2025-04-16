@@ -1,0 +1,22 @@
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy import String, create_engine
+
+
+class Base(DeclarativeBase):
+    pass
+
+
+class User(Base):
+    __tablename__ = "tg_users"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(20))
+    email: Mapped[str] = mapped_column(String(50))
+
+engine = create_engine("sqlite:///db.db", echo=True)
+
+
+def create_db_and_tables() -> None:
+	Base.metadata.create_all(engine)
+     
+create_db_and_tables()
