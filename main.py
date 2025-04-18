@@ -1,9 +1,9 @@
-# 
-
 import asyncio
 import logging
+import asyncpg
+from tabulate import tabulate
 from datetime import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime,select
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 from aiogram import Bot, Dispatcher, types, F
@@ -27,7 +27,7 @@ Base = declarative_base()
 class User(Base):
     __tablename__ = 'users'
     id = Column(Integer, primary_key=True)
-    telegram_id = Column(Integer, unique=True)
+    telegram_id = Column(Integer, unique=False)
     name = Column(String)
     surname = Column(String)
     created_at = Column(DateTime, default=datetime.now)
@@ -38,8 +38,11 @@ class Expense(Base):
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer)
     category = Column(String)
-    amount = Column(Float)
+    amount = Column(Integer)
     created_at = Column(DateTime, default=datetime.now)
+
+# class Category(Base):
+#     __tablename__ = 'categories'
 
 # Создаем асинхронный движок
 engine = create_async_engine(DATABASE_URL, echo=True)
@@ -64,7 +67,7 @@ class Waste(StatesGroup):
 kb = ReplyKeyboardMarkup(
     keyboard=[
         [KeyboardButton(text="Добавить расход"), KeyboardButton(text="Удалить расход")],
-        [KeyboardButton(text="Запланировать расход")],
+        [KeyboardButton(text="Запланировать расход"),KeyboardButton(text='Список расходов')],
         [KeyboardButton(text="Параметры")]
     ],
     resize_keyboard=True,
@@ -78,9 +81,17 @@ kb_right = ReplyKeyboardMarkup(
 )
 
 kb_options = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="Добавить нового пользователя", url="https://example.com")],
-    [InlineKeyboardButton(text="Добавить категорию расхода", url="https://example.com")]
+    [InlineKeyboardButton(text="Добавить нового пользователя", callback_data="new_user")],
+    [InlineKeyboardButton(text="Добавить категорию расхода", url="https://example.com")],
+    [InlineKeyboardButton(text="Удалить пользователя", url="https://example.com")],
+    [InlineKeyboardButton(text="Удалить категорию", callback_data='asv')]
 ])
+
+@dp.callback_query(F.data == "new_user")
+async def handle_btn1(callback: types.CallbackQuery, state: FSMContext):
+    await callback.answer("")
+    await state.set_state(Reg.name)
+    await callback.message.edit_text("Введи имя нового пользователя")
 
 markup = ReplyKeyboardMarkup(
     keyboard=[
@@ -95,6 +106,31 @@ async def cmd_start(message: types.Message, state: FSMContext):
     await message.answer("Привет! Давай тратить деньги вместе!")
     await state.set_state(Reg.name)
     await message.answer('Введи своё имя')
+
+
+@dp.message(F.text == 'Список расходов')
+async def send_users_table(message: types.Message):
+    async with async_session() as session:
+        result = await session.execute(select(Expense))
+        show_amounts = result.scalars().all()
+        
+        if not show_amounts:
+            await message.answer("Пользователей нет в базе")
+            return
+            
+        response = "📋 Список расходов:\n\n"
+        sum_amount = 0 
+        data_str = ''
+        for show_amount in show_amounts:
+            time_str = show_amount.created_at.strftime("%H:%M")
+            if data_str != show_amount.created_at.strftime("%d.%m.%Y"):
+                 data_str = show_amount.created_at.strftime("%d.%m.%Y")
+                 response += f"Дата: {data_str}\n\n"       
+            response += f"Время: {time_str}\n Категория: {show_amount.category}\n Сумма: {show_amount.amount}\n\n"
+            sum_amount += show_amount.amount
+        response += f"💵 Общая сумма за день: {sum_amount} руб."
+        await message.answer(response)
+    
 
 @dp.message(Reg.name)
 async def cmd_name(message: types.Message, state: FSMContext):
@@ -168,6 +204,17 @@ async def process_category(message: types.Message, state: FSMContext):
         reply_markup=kb
     )
     await state.clear()
+
+list_categories_inline = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text="Eда", callback_data="fqwefwe")],
+    [InlineKeyboardButton(text="Транспорт", url="https://example.com")],
+    [InlineKeyboardButton(text="Развлечения", callback_data='asv')]
+])
+
+@dp.message(F.text == "Удалить расход")
+async def show_main_reply(message: types.Message):
+    await message.answer("Выберите категорию для удаления", reply_markup=list_categories_inline)
+
 
 async def main():
     await init_models()  # Инициализация БД
