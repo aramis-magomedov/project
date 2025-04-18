@@ -123,9 +123,11 @@ async def send_users_table(message: types.Message):
         data_str = ''
         for show_amount in show_amounts:
             time_str = show_amount.created_at.strftime("%H:%M")
+
             if data_str != show_amount.created_at.strftime("%d.%m.%Y"):
                  data_str = show_amount.created_at.strftime("%d.%m.%Y")
-                 response += f"Дата: {data_str}\n\n"       
+                 response += f"Дата: {data_str}\n\n" 
+                       
             response += f"Время: {time_str}\n Категория: {show_amount.category}\n Сумма: {show_amount.amount}\n\n"
             sum_amount += show_amount.amount
         response += f"💵 Общая сумма за день: {sum_amount} руб."
