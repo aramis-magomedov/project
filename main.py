@@ -41,8 +41,13 @@ class Expense(Base):
     amount = Column(Integer)
     created_at = Column(DateTime, default=datetime.now)
 
-# class Category(Base):
-#     __tablename__ = 'categories'
+class Category(Base):
+    __tablename__ = 'categories'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    user_id = Column(Integer)
+    name_categories = Column(String)
+
+
 
 # Создаем асинхронный движок
 engine = create_async_engine(DATABASE_URL, echo=True)
@@ -63,26 +68,31 @@ class Waste(StatesGroup):
     category = State()
     sum_waste = State()
 
+class Category_fsm(StatesGroup):
+    cats = State()
+
+
 # Клавиатуры
 kb = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Добавить расход"), KeyboardButton(text="Удалить расход")],
-        [KeyboardButton(text="Запланировать расход"),KeyboardButton(text='Список расходов')],
-        [KeyboardButton(text="Параметры")]
+        [KeyboardButton(text="💸 Добавить расход"), KeyboardButton(text="🗑️ Удалить расход")],
+        [KeyboardButton(text="🗓 Запланировать расход"),KeyboardButton(text='📋 Список расходов')],
+        [KeyboardButton(text="⚙️ Параметры")]
     ],
     resize_keyboard=True,
 )
 
 kb_right = ReplyKeyboardMarkup(
     keyboard=[
-        [KeyboardButton(text="Да,всё верно"), KeyboardButton(text="Нет,ввести данные заново")]
+        [KeyboardButton(text="🟢 Да,всё верно"), KeyboardButton(text="🔴 Нет,ввести данные заново")]
     ],
     resize_keyboard=True,
-)
+    )
+
 
 kb_options = InlineKeyboardMarkup(inline_keyboard=[
-    [InlineKeyboardButton(text="Добавить нового пользователя", callback_data="new_user")],
-    [InlineKeyboardButton(text="Добавить категорию расхода", url="https://example.com")],
+    [InlineKeyboardButton(text="👤 Добавить нового пользователя", callback_data="new_user")],
+    [InlineKeyboardButton(text="📂 Добавить категорию расхода", callback_data="new_category")],
     [InlineKeyboardButton(text="Удалить пользователя", url="https://example.com")],
     [InlineKeyboardButton(text="Удалить категорию", callback_data='asv')]
 ])
@@ -93,12 +103,30 @@ async def handle_btn1(callback: types.CallbackQuery, state: FSMContext):
     await state.set_state(Reg.name)
     await callback.message.edit_text("Введи имя нового пользователя")
 
-markup = ReplyKeyboardMarkup(
-    keyboard=[
-        [KeyboardButton(text="Еда"), KeyboardButton(text="Транспорт"), KeyboardButton(text="Развлечения")]
-    ],
-    resize_keyboard=True,
-)
+# markup = ReplyKeyboardMarkup(
+#     keyboard=[
+#         [KeyboardButton(text="Еда"), KeyboardButton(text="Транспорт"), KeyboardButton(text="Развлечения")]
+#     ],
+#     resize_keyboard=True,
+# )
+
+from aiogram.types import ReplyKeyboardMarkup, KeyboardButton
+
+async def get_dynamic_markup(user_id: int, session_maker) -> ReplyKeyboardMarkup:
+    async with session_maker() as session:
+        result = await session.execute(
+            select(Category.name_categories).where(Category.user_id == user_id)
+        )
+        categories = result.scalars().all()
+
+    if not categories:
+        categories = ["Нет категорий"]
+
+    # Формируем список строк кнопок по 2-3 в ряд (например)
+    keyboard = [[KeyboardButton(text=cat)] for cat in categories]
+
+    return ReplyKeyboardMarkup(keyboard=keyboard, resize_keyboard=True)
+
 
 # Хэндлеры
 @dp.message(Command("start"))
@@ -108,7 +136,7 @@ async def cmd_start(message: types.Message, state: FSMContext):
     await message.answer('Введи своё имя')
 
 
-@dp.message(F.text == 'Список расходов')
+@dp.message(F.text == '📋 Список расходов')
 async def send_users_table(message: types.Message):
     async with async_session() as session:
         result = await session.execute(select(Expense))
@@ -127,7 +155,7 @@ async def send_users_table(message: types.Message):
             if data_str != show_amount.created_at.strftime("%d.%m.%Y"):
                  data_str = show_amount.created_at.strftime("%d.%m.%Y")
                  response += f"Дата: {data_str}\n\n" 
-                       
+
             response += f"Время: {time_str}\n Категория: {show_amount.category}\n Сумма: {show_amount.amount}\n\n"
             sum_amount += show_amount.amount
         response += f"💵 Общая сумма за день: {sum_amount} руб."
@@ -159,31 +187,34 @@ async def cmd_surname(message: types.Message, state: FSMContext):
     await message.answer("Верно?", reply_markup=kb_right)
     await state.clear()
 
-@dp.message(F.text == "Да,всё верно")
+@dp.message(F.text == "🟢 Да,всё верно")
 async def show_main_reply(message: types.Message):
     await message.answer(
-        "Отлично, если вам понадобится добавить пользователя, вы можете сделать это в пункте \"Параметры\"",
+        "\u2003Отлично👍, если вам понадобится добавить пользователя, вы можете сделать это в пункте\n\"⚙️ Параметры\"",
         reply_markup=kb
     )
 
-@dp.message(F.text == "Параметры")
+@dp.message(F.text == "⚙️ Параметры")
 async def options(message: types.Message):
     await message.answer("Параметры", reply_markup=kb_options)
 
-@dp.message(F.text == "Добавить расход")
+@dp.message(F.text == "💸 Добавить расход")
 async def show_menu_expenses(message: types.Message, state: FSMContext):
     await message.answer("Введите сумму расхода")
     await state.set_state(Waste.sum_waste)
 
 @dp.message(Waste.sum_waste)
 async def process_sum(message: types.Message, state: FSMContext):
-    try:
-        amount = float(message.text)
-        await state.update_data(sum_waste=amount)
-        await state.set_state(Waste.category)
-        await message.answer("Выберите категорию расхода", reply_markup=markup)
-    except ValueError:
-        await message.answer("Пожалуйста, введите число!")
+    # try:
+    amount = float(message.text)
+    await state.update_data(sum_waste=amount)
+    await state.set_state(Waste.category)
+
+    dynamic_markup = await get_dynamic_markup(message.from_user.id, async_session)
+    await message.answer("Выберите категорию расхода", reply_markup=dynamic_markup)
+        # await message.answer("Выберите категорию расхода", reply_markup=markup)
+    # except ValueError:
+    #     await message.answer("Пожалуйста, введите число!")
 
 @dp.message(Waste.category)
 async def process_category(message: types.Message, state: FSMContext):
@@ -217,6 +248,40 @@ list_categories_inline = InlineKeyboardMarkup(inline_keyboard=[
 async def show_main_reply(message: types.Message):
     await message.answer("Выберите категорию для удаления", reply_markup=list_categories_inline)
 
+@dp.callback_query(F.data == "new_category")
+async def show_categories(callback, state: FSMContext):
+    await callback.answer("")
+    await state.set_state(Category_fsm.cats)
+    await callback.message.edit_text("Введи новую категорию")
+
+
+
+@dp.message(Category_fsm.cats)
+async def add_category(message: types.Message, state: FSMContext):
+    async with async_session() as session:
+        # Проверяем, есть ли уже такая категория
+        existing = await session.execute(
+            select(Category).where(
+                Category.name_categories == message.text,
+                Category.user_id == message.from_user.id
+            )
+        )
+        
+
+        if existing.scalar():
+            await message.answer("Эта категория уже существует!")
+            return 
+            
+        # Добавляем новую категорию
+        new_category = Category(
+            name_categories=message.text,
+            user_id=message.from_user.id
+        )
+        session.add(new_category)
+        await session.commit()
+        
+    await message.answer(f"Категория '{message.text}' добавлена!")
+    await state.clear()
 
 async def main():
     await init_models()  # Инициализация БД

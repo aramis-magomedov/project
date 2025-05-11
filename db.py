@@ -1,10 +1,12 @@
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 from sqlalchemy import String, create_engine
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 
 class Base(DeclarativeBase):
     pass
-
+@property
 
 class User(Base):
     __tablename__ = "tg_users"
@@ -19,4 +21,6 @@ engine = create_engine("sqlite:///db.db", echo=True)
 def create_db_and_tables() -> None:
 	Base.metadata.create_all(engine)
      
-create_db_and_tables()
+Session = AsyncSession(engine)
+
+
