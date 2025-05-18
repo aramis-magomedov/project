@@ -12,3 +12,8 @@ list_categories_inline = InlineKeyboardMarkup(inline_keyboard=[
     [InlineKeyboardButton(text="Транспорт", url="https://example.com")],
     [InlineKeyboardButton(text="Развлечения", callback_data='asv')]
 ])
+
+kb_register_user = InlineKeyboardMarkup(inline_keyboard=[
+    [InlineKeyboardButton(text="🚪 Войти в аккаунт", callback_data="auth_callback")],
+    [InlineKeyboardButton(text="🌱 Регистрация", callback_data="register_callback")]
+])

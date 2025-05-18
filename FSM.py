@@ -6,6 +6,8 @@ class Reg(StatesGroup):
     name = State()
     surname = State()
     password = State()
+    registry_or_auth = State()
+    cheked = State()
 
 class Waste(StatesGroup):
     category = State()

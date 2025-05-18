@@ -18,6 +18,7 @@ class User(Base):
     name = Column(String)
     surname = Column(String)
     created_at = Column(DateTime, default=datetime.now)
+    password = Column(String)
 
 
 # Модель расхода

@@ -17,3 +17,10 @@ kb_right = ReplyKeyboardMarkup(
     ],
     resize_keyboard=True,
     )
+
+kb_cancel_FSM = ReplyKeyboardMarkup(
+    keyboard=[
+        [KeyboardButton(text="Отмена")]
+    ],
+    resize_keyboard=True,
+    )
