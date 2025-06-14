@@ -19,6 +19,7 @@ dp = Dispatcher()
 
 async def main():
     dp.include_router(router)
+    await bot.delete_webhook(drop_pending_updates=True) #Чтобы выключенный бот не копил команды
     await init_models()  # Инициализация БД
     await dp.start_polling(bot)
 

@@ -4,11 +4,12 @@ from kb.kb_inline import kb_options, kb_register_user
 from kb.kb_reply import kb, kb_right, kb_cancel_FSM
 
 import asyncio
-from aiogram import types, Router, F
+from aiogram import types, Router, F, Bot
 from aiogram.fsm.context import FSMContext
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
 from aiogram.filters.command import Command
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import sessionmaker, declarative_base
 from datetime import datetime
 
@@ -45,6 +46,12 @@ async def get_dynamic_markup(user_id: int, session_maker) -> ReplyKeyboardMarkup
 # Хэндлеры
 
 
+# Вызов гланого меню через меню бургер
+@router.message(Command("main_menu"))
+async def cmd_start(message: types.Message):
+    await message.answer("Вызов главного меню", reply_markup=kb)
+
+
 
 @router.message(F.text == '📋 Список расходов')
 async def send_users_table(message: types.Message):
@@ -53,7 +60,7 @@ async def send_users_table(message: types.Message):
         show_amounts = result.scalars().all()
         
         if not show_amounts:
-            await message.answer("Пользователей нет в базе")
+            await message.answer("Расходов нет в базе")
             return
             
         response = "📋 Список расходов:\n\n"
@@ -126,7 +133,7 @@ async def show_main_reply(message: types.Message, state: FSMContext):
         if message.text == "🟢 Да,всё верно":
             async with async_session() as session:
                 user = User(
-                    telegram_id=message.from_user.id,
+                    id=message.from_user.id,
                     name=data["name"],
                     surname=data["surname"],
                     password=data["password"]
@@ -173,6 +180,181 @@ async def options(message: types.Message):
     await message.answer("Параметры", reply_markup=kb_options)
 
 
+
+
+@router.message(F.text == "🗓 Запланировать расход")
+async def show_menu_expenses(message: types.Message, bot: Bot):
+    print("Хендлер 🗓 Запланировать расход отработал")
+
+    async with async_session() as session:
+        # Получаем пользователя из БД по его Telegram ID
+        user = await session.execute(select(User).where(User.id == message.from_user.id))
+        user = user.scalar_one_or_none()  # Возвращает None, если пользователя нет
+        
+        if user and user.IQ_user == 50:  # Проверяем, что пользователь найден и его IQ = 50
+            print("Первая проверка IQ отработала")
+            await message.answer(
+                "Я честно по приколу эту суету добавил. Ты вообще сюда зачем нажал(а)? "
+                "Как ты себе представляешь должен работать такой функционал? "
+                "Ерундой не занимайся, больше не нажимай сюда."
+            )
+            user.IQ_user = 49
+            await session.commit()
+            return
+
+
+
+        if user and user.IQ_user == 49:  # Проверяем, что пользователь найден и его IQ = 49
+            print("Вторая проверка IQ отработала")
+            await message.answer("Успокойся говорю. Хоть что-то в голове держи")
+            user.IQ_user = 48
+            await session.commit()
+            return
+    
+        if user and user.IQ_user == 48:  # Проверяем, что пользователь найден и его IQ = 48
+            await message.answer("Как черт не веди себя, хватит нажимать сюда")
+            user.IQ_user = 47
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 47:  # Проверяем, что пользователь найден и его IQ = 47
+            await message.answer("Ты че хочешь? Иди делом займись, родителей своих порадуй или прогуляйся, чем целый день за компом сидеть ерундой страдать")
+            user.IQ_user = 46
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 46:  # Проверяем, что пользователь найден и его IQ = 46
+            await message.answer("Душу твою мотал, не нажимай сюда")
+            user.IQ_user = 45
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 45:  # Проверяем, что пользователь найден и его IQ = 45
+            await message.answer("Твой нос топтал! Не нажимай сюда!")
+            user.IQ_user = 44
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 44:  # Проверяем, что пользователь найден и его IQ = 44
+            await message.answer("Если заняться нечем - скажи, там мне огород надо вскопать")
+            user.IQ_user = 43
+            await session.commit()
+            return
+
+        if user and user.IQ_user == 43:
+            await message.answer("Давай тогда сам реализуешь эту фукцию, если ты ашалеть какой умный")
+            user.IQ_user = 42
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 42:
+            await message.answer("Ни хаха уже, по идее")
+            user.IQ_user = 41
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 41:
+            await message.answer("Упс! Что-то пошло не так. Проверьте интернет соединение")
+            user.IQ_user = 40
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 40:
+            await message.answer("Упс! Что-то пошло не так. Проверьте интернет соединение")
+            user.IQ_user = 39
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 39:
+            await message.answer("Упс! Что-то пошло не так. Проверьте интернет соединение")
+            user.IQ_user = 38
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 38:
+            await message.answer("Упс! Что-то пошло не так. Проверьте интернет соединение")
+            user.IQ_user = 37
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 37:
+            await message.answer("Упс! Что-то пошло не так. Проверьте интернет соединение")
+            user.IQ_user = 36
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 36:
+            await message.answer("Упс! Что-то пошло не так. Проверьте интернет соединение")
+            user.IQ_user = 35
+            await session.commit()
+            return
+
+        if user and user.IQ_user == 35:
+            await message.answer("Упс! Что-то пошло не так. Проверьте интернет соединение")
+            user.IQ_user = 34
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 34:
+            await message.answer("Упс! Что-то пошло не так. Проверьте интернет соединение")
+            user.IQ_user = 33
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 33:
+            await message.answer("Упс! Что-то пошло не так. Кажется вы потеряли свое мужское")
+            user.IQ_user = 32
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 32:
+            await message.answer("Неугомоный ты внатуре")
+            user.IQ_user = 31
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 31:
+            await message.answer("Тебя роняли разок в детсве об кафель, да?")
+            user.IQ_user = 30
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 30:
+            await message.answer("Тебя роняли два раза в детсве об кафель, да?")
+            user.IQ_user = 29
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 29:
+            await message.answer("Вай блин, три раза в неделю роняли что-ли?")
+            user.IQ_user = 28
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 28:
+            await message.answer("Э, оставь да уже эту кнопкку!")
+            user.IQ_user = 27
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 27:
+            await message.answer("Я сейчас удалю тебя из интернета, пять секунд я тебе интернет удалю")
+            user.IQ_user = 26
+            await session.commit()
+            return
+        
+        if user and user.IQ_user == 26:
+            await message.answer("Номер ка дай свой сюда, черт")
+            user.IQ_user = 25
+            await session.commit()
+            return
+
+        if user and user.IQ_user == 25:
+            await bot.delete_message(chat_id=message.chat.id, message_id=message.message_id)
+            await message.answer("Номер говорю дай свой")
+            user.IQ_user = 24
+            await session.commit()
+            return
 
 
 
@@ -229,35 +411,6 @@ async def process_category(message: types.Message, state: FSMContext):
 
 
 
-
-
-
-
-# Функция для формирования динамического инлайн из актуальных категорий
-async def get_categories(user_id: int, session_maker) -> ReplyKeyboardMarkup:
-    async with session_maker() as session:
-        result = await session.execute(
-            select(Category.name_categories).where(Category.user_id == user_id)
-        )
-        categories = result.scalars().all()
-
-    if not categories:
-        categories = ["Нет категорий"]
-
-    # Формируем список строк
-    Inline_list_categories = [[[InlineKeyboardButton(text=cat, callback_data=f"callback_{cat}")] for cat in categories]]
-
-    return InlineKeyboardMarkup(inline_keyboard=Inline_list_categories)
-
-
-
-@router.message(F.text == "🗑️ Удалить расход")
-async def show_main_reply(message: types.Message):
-    
-    dynamic_list_categories = await get_categories(message.from_user.id, async_session)
-    await message.answer("Выберите категорию для удаления", reply_markup=dynamic_list_categories)
-
-
 @router.callback_query(F.data.startswith("callback_"))
 async def handle_callback(callback: types.CallbackQuery):
     # Извлекаем динамическую часть (some_id)
@@ -292,7 +445,6 @@ async def handle_callback(callback: types.CallbackQuery):
 async def show_categories(callback, state: FSMContext):
     await callback.answer("")
     await state.set_state(Category_fsm.cats)
-    await callback.message.edit_text("Введи новую категорию")
     await callback.message.answer("Введи новую категорию", reply_markup = kb_cancel_FSM)
 
 
@@ -325,5 +477,66 @@ async def add_category(message: types.Message, state: FSMContext):
             session.add(new_category)
             await session.commit()
         
-        await message.answer(f"Категория '{message.text}' добавлена!")
+        await message.answer(f"Категория '{message.text}' добавлена!", reply_markup=kb)
         await state.clear()
+
+
+
+
+
+
+
+
+import matplotlib.pyplot as plt 
+from io import BytesIO
+from aiogram.types import BufferedInputFile
+from sqlalchemy import func
+
+
+@router.callback_query(F.data == "show_diagram")
+async def send_pie_chart(callback: types.CallbackQuery):
+    async with async_session() as session:
+        result = await session.execute(
+            select(Expense.category, func.sum(Expense.amount))
+            .where(Expense.user_id == callback.from_user.id)
+            .group_by(Expense.category)
+        )
+        data = result.all()
+
+        if not data:
+            await callback.message.answer("Нет данных для построения диаграммы")
+            return
+
+        # 2. Подготавливаем данные
+        labels = [item[0] for item in data]
+        sizes = [float(item[1]) for item in data]
+        
+        # 3. Создаем диаграмму
+        buf = BytesIO()
+        plt.figure(figsize=(10, 8))
+        plt.pie(sizes, labels=labels, autopct='%1.1f%%', shadow=True)
+        plt.title('Ваши расходы по категориям')
+        plt.savefig(buf, format='png', dpi=100)
+        buf.seek(0)
+        plt.close()
+
+        # 4. Отправляем изображение (ПРАВИЛЬНЫЙ способ для aiogram 3.x)
+        await callback.message.answer_photo(
+            types.BufferedInputFile(buf.read(), filename='expenses.png')
+        )
+        buf.close()
+
+
+
+
+
+
+
+# 🗑️ Удалить расход
+@router.message(F.text == '🗑️ Удалить расход')
+async def send_users_table(message: types.Message):
+    async with async_session() as session:
+        result = await session.execute(select(Expense).where(Expense.user_id == message.from_user.id))
+        db_object = result.scalars().all()
+        for expense in db_object:
+                print(f"✅ ✅ ✅ ✅  {expense.__dict__}✅ ✅ ✅ ✅ ")
